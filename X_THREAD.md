@@ -14,8 +14,9 @@ Wallet: https://nightly.app/
 - Connect → paste a recipient → add a memo → sign
 - Explorer: https://cookiescan.io
 
-4/ Oven stats (slot/epoch/ping) and recent signatures are read live from Cookie RPC. No fake indexer.
+4/ Oven stats (slot/epoch/ping/TPS) and recent signatures are read live from Cookie RPC. COOK/USD and the top pools come from Cookiescan `api.cookiescan.io/api/markets`. OMNOM metadata is a DAS `getAsset` call. The 1 COOK → OMNOM quote is Cookiebox `GET /quote` (read-only).
 
 Repo: https://github.com/HaydernCenterpoint/crumbs-cookie-chain
 Docs: https://docs.cookiechain.wtf/getting-started
+DAS: https://api.cookiescan.io/
 @TheCookieChain

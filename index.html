@@ -56,6 +56,8 @@
     .spark { display: flex; align-items: flex-end; gap: 4px; height: 36px; margin: 8px 0 0; }
     .spark i { display: block; width: 12px; background: var(--butter); border-radius: 2px 2px 0 0; min-height: 2px; }
     .eco { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; font-size: 12px; }
+    .asset { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+    .asset img { width: 36px; height: 36px; border-radius: 10px; background: #140d09; object-fit: cover; }
     footer { padding: 10px 0 40px; font-size: 12px; opacity: 0.75; }
     @media (max-width: 800px) {
       .hero, .grid { grid-template-columns: 1fr; }
@@ -114,6 +116,8 @@
           <tr><th>TPS (1m)</th><td id="tps">—</td></tr>
           <tr><th>Tx count</th><td id="txCount">—</td></tr>
           <tr><th>Circulating</th><td id="supply">—</td></tr>
+          <tr><th>COOK USD</th><td id="cookUsd">—</td></tr>
+          <tr><th>Markets</th><td id="marketCount">—</td></tr>
         </table>
         <div class="spark" id="spark" title="tx/s over the last five 60s samples"></div>
         <p class="eco">
@@ -131,11 +135,23 @@
       <p class="eyebrow">agg.cookiebox.app · read-only · CORS *</p>
       <p id="quoteLine">Loading 1 COOK → OMNOM…</p>
       <p id="quoteImpact" class="status"></p>
+      <div class="asset" id="omnomAsset">
+        <span>DAS getAsset: loading OMNOM…</span>
+      </div>
       <p class="eco">
         <a href="https://cookiebox.app/" target="_blank" rel="noopener">Swap on Cookiebox</a>
         <a href="https://cookieswap.fun/" target="_blank" rel="noopener">Cookieswap</a>
         <a href="https://github.com/cookiechain/cookie-mcp" target="_blank" rel="noopener">cookie-mcp</a>
+        <a href="https://api.cookiescan.io/" target="_blank" rel="noopener">DAS</a>
       </p>
+    </section>
+    <section class="panel" style="margin-bottom:16px;">
+      <h2>Cookie markets</h2>
+      <p class="eyebrow">api.cookiescan.io/api/markets · read-only · CORS reflects this origin</p>
+      <table>
+        <thead><tr><th>Venue</th><th>Pair</th><th>Liquidity (USD)</th></tr></thead>
+        <tbody id="markets"><tr><td colspan="3">Loading markets…</td></tr></tbody>
+      </table>
     </section>
     <section class="panel" style="margin-bottom:28px;">
       <h2>Recent crumbs</h2>
@@ -156,12 +172,16 @@
     const COOK_MINT = "So11111111111111111111111111111111111111112";
     const OMNOM_MINT = "9V6z4wiifv2BrCxd7rwBWBAaWS2dxSepWZmWjRpfQ66p";
     const QUOTE_URL = "https://agg.cookiebox.app/quote";
+    const SCAN_API = "https://api.cookiescan.io";
     const solanaWeb3 = window.solanaWeb3;
     const connection = new solanaWeb3.Connection(RPC, "confirmed");
     let provider = null;
     let publicKey = null;
 
     const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[c]));
     const setStatus = (msg, err) => {
       const el = $("txStatus");
       el.textContent = msg;
@@ -202,6 +222,57 @@
         }
       } catch (e) {
         $("ping").textContent = "RPC error";
+      }
+    }
+
+    async function refreshMarkets() {
+      try {
+        const res = await fetch(SCAN_API + "/api/markets");
+        if (!res.ok) throw new Error("markets HTTP " + res.status);
+        const data = await res.json();
+        const usd = Number(data.cookUsd);
+        if (usd > 0) $("cookUsd").textContent = "$" + usd.toFixed(6);
+        const markets = Array.isArray(data.markets) ? data.markets : [];
+        $("marketCount").textContent = String(data.marketCount || markets.length);
+        const top = markets.slice().sort((a, b) => (b.liquidityUsd || 0) - (a.liquidityUsd || 0)).slice(0, 8);
+        if (!top.length) {
+          $("markets").innerHTML = "<tr><td colspan='3'>No markets returned.</td></tr>";
+          return;
+        }
+        $("markets").innerHTML = top.map((m) => {
+          const base = (m.baseToken && m.baseToken.symbol) || "?";
+          const quote = (m.quoteToken && m.quoteToken.symbol) || "?";
+          const mint = (m.baseToken && m.baseToken.mint) || "";
+          const href = "https://cookiescan.io/token/" + mint;
+          const liq = m.liquidityUsd == null ? "—" : "$" + Number(m.liquidityUsd).toFixed(2);
+          return "<tr><td>" + esc(m.type || "—") + "</td><td><a href='" + href + "' target='_blank' rel='noopener'>" + esc(base + "/" + quote) + "</a></td><td>" + liq + "</td></tr>";
+        }).join("");
+      } catch (e) {
+        $("markets").innerHTML = "<tr><td colspan='3'>Markets unavailable (" + esc(e.message || e) + ")</td></tr>";
+      }
+    }
+
+    async function refreshAsset() {
+      const box = $("omnomAsset");
+      try {
+        const res = await fetch(SCAN_API + "/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getAsset", params: { id: OMNOM_MINT } }),
+        });
+        if (!res.ok) throw new Error("DAS HTTP " + res.status);
+        const data = await res.json();
+        const r = data.result;
+        if (!r) throw new Error("no asset");
+        const meta = (r.content && r.content.metadata) || {};
+        const img = (r.content && r.content.links && r.content.links.image) || "";
+        const name = meta.name || "OMNOM";
+        const symbol = meta.symbol || "OMNOM";
+        const href = "https://cookiescan.io/token/" + OMNOM_MINT;
+        box.innerHTML = (img ? "<img alt='' src='" + esc(img) + "' />" : "") +
+          "<span>DAS <a href='" + href + "' target='_blank' rel='noopener'>" + esc(name) + " (" + esc(symbol) + ")</a> · " + OMNOM_MINT.slice(0, 8) + "…</span>";
+      } catch (e) {
+        box.textContent = "DAS getAsset unavailable (" + (e.message || e) + ")";
       }
     }
 
@@ -341,12 +412,15 @@
     $("switchNet").addEventListener("click", () => switchNetwork().catch((e) => setStatus(e.message, true)));
     $("sendForm").addEventListener("submit", sendCrumb);
     $("refreshBtn").addEventListener("click", () => {
-      refreshStats(); refreshBalance(); refreshActivity(); refreshQuote();
+      refreshStats(); refreshBalance(); refreshActivity(); refreshQuote(); refreshMarkets(); refreshAsset();
     });
     refreshStats();
     refreshQuote();
+    refreshMarkets();
+    refreshAsset();
     setInterval(refreshStats, 12000);
     setInterval(refreshQuote, 20000);
+    setInterval(refreshMarkets, 30000);
   </script>
 </body>
 </html>

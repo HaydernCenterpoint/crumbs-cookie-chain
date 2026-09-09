@@ -21,8 +21,10 @@ Crumbs sends native COOK with an on-chain memo, shows Nightly wallet state, and 
 - Show address and COOK balance.
 - Transfer COOK + Memo program instruction.
 - Confirm the signature and link the explorer.
-- Dashboard: slot, epoch, RPC ping, 1-minute TPS, tx count, circulating COOK, sparkline from `getRecentPerformanceSamples`.
+- Dashboard: slot, epoch, RPC ping, 1-minute TPS, tx count, circulating COOK, COOK/USD, market count, sparkline from `getRecentPerformanceSamples`.
 - Live Cookiebox aggregator quote: 1 COOK → OMNOM via `GET https://agg.cookiebox.app/quote` (read-only, CORS `*`). Swap execution stays on Cookiebox — this page does not POST `/swap-tx`.
+- Cookie DAS `getAsset` for OMNOM (`https://api.cookiescan.io` JSON-RPC, CORS reflects this origin).
+- Live Cookiescan markets table from `GET https://api.cookiescan.io/api/markets` (top 8 by `liquidityUsd`). Candy Shop `swap.cookiescan.io` has no CORS, so the browser path is Cookiebox + Cookiescan REST/DAS, not Candy Shop `/quote`.
 - Ecosystem links: CookieScan, Cookieswap, Cookiebox, DAS API, cookie-mcp, Nightly, Hyperlane bridge.
 - Activity: last signatures for the connected address.
 
