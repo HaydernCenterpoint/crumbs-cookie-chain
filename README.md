@@ -21,7 +21,8 @@ Crumbs sends native COOK with an on-chain memo, shows Nightly wallet state, and 
 - Show address and COOK balance.
 - Transfer COOK + Memo program instruction.
 - Confirm the signature and link the explorer.
-- Dashboard: slot, epoch, RPC ping.
+- Dashboard: slot, epoch, RPC ping, 1-minute TPS, tx count, circulating COOK, sparkline from `getRecentPerformanceSamples`.
+- Ecosystem links: CookieScan, Cookieswap, Cookiebox, DAS API, Nightly, Hyperlane bridge.
 - Activity: last signatures for the connected address.
 
 ## Run locally

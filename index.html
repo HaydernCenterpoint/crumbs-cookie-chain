@@ -53,6 +53,9 @@
     .status { min-height: 1.4em; font-size: 12px; color: var(--butter); margin-top: 10px; }
     .status.err { color: #ff8a6a; }
     .addr { word-break: break-all; }
+    .spark { display: flex; align-items: flex-end; gap: 4px; height: 36px; margin: 8px 0 0; }
+    .spark i { display: block; width: 12px; background: var(--butter); border-radius: 2px 2px 0 0; min-height: 2px; }
+    .eco { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; font-size: 12px; }
     footer { padding: 10px 0 40px; font-size: 12px; opacity: 0.75; }
     @media (max-width: 800px) {
       .hero, .grid { grid-template-columns: 1fr; }
@@ -108,8 +111,19 @@
           <tr><th>Slot</th><td id="slot">—</td></tr>
           <tr><th>Epoch</th><td id="epoch">—</td></tr>
           <tr><th>RPC ping</th><td id="ping">—</td></tr>
+          <tr><th>TPS (1m)</th><td id="tps">—</td></tr>
+          <tr><th>Tx count</th><td id="txCount">—</td></tr>
+          <tr><th>Circulating</th><td id="supply">—</td></tr>
         </table>
-        <p><a href="https://hyperlane.cookiescan.io" target="_blank" rel="noopener">Bridge COOK from Solana</a> · <a href="https://cookiescan.io" target="_blank" rel="noopener">Explorer</a> · <a href="https://nightly.app/" target="_blank" rel="noopener">Nightly</a></p>
+        <div class="spark" id="spark" title="tx/s over the last five 60s samples"></div>
+        <p class="eco">
+          <a href="https://hyperlane.cookiescan.io" target="_blank" rel="noopener">Bridge</a>
+          <a href="https://cookiescan.io" target="_blank" rel="noopener">CookieScan</a>
+          <a href="https://cookieswap.fun/" target="_blank" rel="noopener">Cookieswap</a>
+          <a href="https://cookiebox.app/" target="_blank" rel="noopener">Cookiebox</a>
+          <a href="https://api.cookiescan.io/" target="_blank" rel="noopener">DAS API</a>
+          <a href="https://nightly.app/" target="_blank" rel="noopener">Nightly</a>
+        </p>
       </div>
     </section>
     <section class="panel" style="margin-bottom:28px;">
@@ -147,13 +161,31 @@
     async function refreshStats() {
       const t0 = performance.now();
       try {
-        const [epoch, slot] = await Promise.all([
+        const [epoch, slot, samples, supply] = await Promise.all([
           connection.getEpochInfo(),
           connection.getSlot(),
+          connection.getRecentPerformanceSamples(5),
+          connection.getSupply(),
         ]);
         $("ping").textContent = Math.round(performance.now() - t0) + " ms";
         $("slot").textContent = String(slot);
         $("epoch").textContent = epoch.epoch + " · " + epoch.slotIndex + "/" + epoch.slotsInEpoch;
+        if (epoch.transactionCount != null) {
+          $("txCount").textContent = Number(epoch.transactionCount).toLocaleString();
+        }
+        if (samples && samples[0] && samples[0].samplePeriodSecs) {
+          const tps = samples[0].numTransactions / samples[0].samplePeriodSecs;
+          $("tps").textContent = tps.toFixed(2) + " tx/s";
+          const rates = samples.map((s) => s.samplePeriodSecs ? s.numTransactions / s.samplePeriodSecs : 0).reverse();
+          const max = Math.max.apply(null, rates.concat([0.01]));
+          $("spark").innerHTML = rates.map((r) => {
+            const h = Math.max(2, Math.round((r / max) * 36));
+            return "<i style='height:" + h + "px'></i>";
+          }).join("");
+        }
+        if (supply && supply.value) {
+          $("supply").textContent = (supply.value.circulating / solanaWeb3.LAMPORTS_PER_SOL).toLocaleString(undefined, { maximumFractionDigits: 0 }) + " COOK";
+        }
       } catch (e) {
         $("ping").textContent = "RPC error";
       }
