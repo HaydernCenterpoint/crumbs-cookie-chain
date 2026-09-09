@@ -6,12 +6,17 @@ Prizes: 500 USDC + 500 USDC
 
 HUMAN_ONLY. You need GitHub + Nightly + a little COOK.
 
-1. Create a public GitHub repo, push the `crumbs/` folder.
-2. GitHub Pages → live URL.
-3. Open the live URL, Connect Nightly, send one crumb, copy the tx.
-4. Superteam fields:
-   - GitHub repository = repo URL
-   - Live application URL = Pages URL
+Already published:
+
+- Repo: https://github.com/HaydernCenterpoint/crumbs-cookie-chain
+- Live: https://hayderncenterpoint.github.io/crumbs-cookie-chain/
+
+Remaining (you):
+
+1. Open the live URL, Connect Nightly, send one crumb, copy the tx.
+2. Superteam fields:
+   - GitHub repository = https://github.com/HaydernCenterpoint/crumbs-cookie-chain
+   - Live application URL = https://hayderncenterpoint.github.io/crumbs-cookie-chain/
    - Addresses = your wallet + tx signature
 5. Post `X_THREAD.md` and drop the thread in https://t.me/TheCookieNetChain
 

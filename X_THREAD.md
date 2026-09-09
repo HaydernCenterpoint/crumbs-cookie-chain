@@ -1,10 +1,8 @@
 # X thread for Cookie Chain cApp (after GitHub Pages is live)
 
-Replace LIVE_URL and REPO_URL.
-
 1/ Crumbs is a Cookie Chain cApp: connect Nightly, switch to rpc.cookiescan.io, send COOK with an on-chain memo, watch the signature land.
 
-LIVE_URL
+https://hayderncenterpoint.github.io/crumbs-cookie-chain/
 
 2/ Nightly is first-class. The app calls changeNetwork with Cookie genesis `9wDaBRDgArEUpvhHxGguNkwozsZh4UpGZB9o2EoEcBB2` plus the community RPC, then signAndSendTransaction.
 
@@ -18,6 +16,6 @@ Wallet: https://nightly.app/
 
 4/ Oven stats (slot/epoch/ping) and recent signatures are read live from Cookie RPC. No fake indexer.
 
-Repo: REPO_URL
+Repo: https://github.com/HaydernCenterpoint/crumbs-cookie-chain
 Docs: https://docs.cookiechain.wtf/getting-started
 @TheCookieChain
