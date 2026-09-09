@@ -176,6 +176,7 @@
     const QUOTE_URL = "https://agg.cookiebox.app/quote";
     const SCAN_API = "https://api.cookiescan.io";
     const COOK_DOMAINS = "H43Qtq4AMQ86y7yc3YtCKZJ2QMhhnCcHyZKeFeoQn7PA";
+    const COOK_MARKET = "Ey35mr69UfiQqZSwD2qYAZoMNfnuVJGCjwNSB64ppHm7";
     const DOMAIN_DISC = [35, 146, 98, 112, 13, 230, 231, 153];
     const solanaWeb3 = window.solanaWeb3;
     const connection = new solanaWeb3.Connection(RPC, "confirmed");
@@ -389,7 +390,11 @@
       const end = 12 + nameLen;
       if (end + 32 > data.length) throw new Error("domain account too short");
       const owner = new solanaWeb3.PublicKey(data.slice(end, end + 32)).toBase58();
-      return { label: label + ".cook", owner, pda: pda.toBase58() };
+      const [escrow] = await solanaWeb3.PublicKey.findProgramAddress(
+        [new TextEncoder().encode("escrow_authority")],
+        new solanaWeb3.PublicKey(COOK_MARKET)
+      );
+      return { label: label + ".cook", owner, pda: pda.toBase58(), listed: owner === escrow.toBase58() };
     }
 
     async function previewRecipient() {
@@ -401,8 +406,13 @@
       }
       try {
         const r = await resolveCookName(to);
-        line.textContent = r.label + " → " + r.owner;
-        line.className = "status";
+        if (r.listed) {
+          line.textContent = r.label + " is listed on CookOven market. Owner is the escrow PDA — sending would strand COOK.";
+          line.className = "status err";
+        } else {
+          line.textContent = r.label + " → " + r.owner;
+          line.className = "status";
+        }
       } catch (e) {
         line.textContent = e.message || String(e);
         line.className = "status err";
@@ -420,6 +430,9 @@
         if (looksLikeCookName(to)) {
           setStatus("Resolving " + to + " on CookOven…");
           const r = await resolveCookName(to);
+          if (r.listed) {
+            throw new Error(r.label + " is listed; paying marketplace escrow would strand COOK. Use market.cookoven.xyz or another recipient.");
+          }
           dest = new solanaWeb3.PublicKey(r.owner);
           $("nameLine").textContent = r.label + " → " + r.owner;
           $("nameLine").className = "status";
