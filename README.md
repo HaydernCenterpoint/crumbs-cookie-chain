@@ -22,7 +22,8 @@ Crumbs sends native COOK with an on-chain memo, shows Nightly wallet state, and 
 - Transfer COOK + Memo program instruction.
 - Confirm the signature and link the explorer.
 - Dashboard: slot, epoch, RPC ping, 1-minute TPS, tx count, circulating COOK, sparkline from `getRecentPerformanceSamples`.
-- Ecosystem links: CookieScan, Cookieswap, Cookiebox, DAS API, Nightly, Hyperlane bridge.
+- Live Cookiebox aggregator quote: 1 COOK → OMNOM via `GET https://agg.cookiebox.app/quote` (read-only, CORS `*`). Swap execution stays on Cookiebox — this page does not POST `/swap-tx`.
+- Ecosystem links: CookieScan, Cookieswap, Cookiebox, DAS API, cookie-mcp, Nightly, Hyperlane bridge.
 - Activity: last signatures for the connected address.
 
 ## Run locally

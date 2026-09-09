@@ -126,6 +126,17 @@
         </p>
       </div>
     </section>
+    <section class="panel" style="margin-bottom:16px;">
+      <h2>Cookiebox quote</h2>
+      <p class="eyebrow">agg.cookiebox.app · read-only · CORS *</p>
+      <p id="quoteLine">Loading 1 COOK → OMNOM…</p>
+      <p id="quoteImpact" class="status"></p>
+      <p class="eco">
+        <a href="https://cookiebox.app/" target="_blank" rel="noopener">Swap on Cookiebox</a>
+        <a href="https://cookieswap.fun/" target="_blank" rel="noopener">Cookieswap</a>
+        <a href="https://github.com/cookiechain/cookie-mcp" target="_blank" rel="noopener">cookie-mcp</a>
+      </p>
+    </section>
     <section class="panel" style="margin-bottom:28px;">
       <h2>Recent crumbs</h2>
       <table>
@@ -142,6 +153,9 @@
     const RPC = "https://rpc.cookiescan.io";
     const GENESIS = "9wDaBRDgArEUpvhHxGguNkwozsZh4UpGZB9o2EoEcBB2";
     const MEMO = "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr";
+    const COOK_MINT = "So11111111111111111111111111111111111111112";
+    const OMNOM_MINT = "9V6z4wiifv2BrCxd7rwBWBAaWS2dxSepWZmWjRpfQ66p";
+    const QUOTE_URL = "https://agg.cookiebox.app/quote";
     const solanaWeb3 = window.solanaWeb3;
     const connection = new solanaWeb3.Connection(RPC, "confirmed");
     let provider = null;
@@ -188,6 +202,29 @@
         }
       } catch (e) {
         $("ping").textContent = "RPC error";
+      }
+    }
+
+    async function refreshQuote() {
+      try {
+        const u = QUOTE_URL + "?" + new URLSearchParams({
+          inputMint: COOK_MINT,
+          outputMint: OMNOM_MINT,
+          amount: "1000000000",
+          slippageBps: "50",
+        }).toString();
+        const res = await fetch(u);
+        if (!res.ok) throw new Error("quote HTTP " + res.status);
+        const data = await res.json();
+        const r = data.route;
+        if (!r) throw new Error("no route");
+        const out = Number(r.netOutAmount || r.outAmount) / 1e6;
+        const venue = (r.segments && r.segments[0] && r.segments[0].venue) || "cookiebox";
+        $("quoteLine").textContent = "1 COOK → " + out.toFixed(4) + " OMNOM via " + venue;
+        const impact = r.priceImpactPct == null ? "—" : (Number(r.priceImpactPct) * 100).toFixed(3) + "%";
+        $("quoteImpact").textContent = "min out " + (Number(r.minOutAmount) / 1e6).toFixed(4) + " · impact " + impact;
+      } catch (e) {
+        $("quoteLine").textContent = "Quote unavailable (" + (e.message || e) + ")";
       }
     }
 
@@ -304,10 +341,12 @@
     $("switchNet").addEventListener("click", () => switchNetwork().catch((e) => setStatus(e.message, true)));
     $("sendForm").addEventListener("submit", sendCrumb);
     $("refreshBtn").addEventListener("click", () => {
-      refreshStats(); refreshBalance(); refreshActivity();
+      refreshStats(); refreshBalance(); refreshActivity(); refreshQuote();
     });
     refreshStats();
+    refreshQuote();
     setInterval(refreshStats, 12000);
+    setInterval(refreshQuote, 20000);
   </script>
 </body>
 </html>
