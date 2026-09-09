@@ -370,6 +370,14 @@
       return s.endsWith(".cook") ? s.slice(0, -5) : s;
     }
 
+    async function getEscrowAuthority() {
+      const [escrow] = await solanaWeb3.PublicKey.findProgramAddress(
+        [new TextEncoder().encode("escrow_authority")],
+        new solanaWeb3.PublicKey(COOK_MARKET)
+      );
+      return escrow.toBase58();
+    }
+
     async function resolveCookName(input) {
       const label = normalizeCookLabel(input);
       if (!label || label.length > 32 || !/^[a-z0-9-]+$/.test(label) || label.startsWith("-") || label.endsWith("-")) {
@@ -390,11 +398,8 @@
       const end = 12 + nameLen;
       if (end + 32 > data.length) throw new Error("domain account too short");
       const owner = new solanaWeb3.PublicKey(data.slice(end, end + 32)).toBase58();
-      const [escrow] = await solanaWeb3.PublicKey.findProgramAddress(
-        [new TextEncoder().encode("escrow_authority")],
-        new solanaWeb3.PublicKey(COOK_MARKET)
-      );
-      return { label: label + ".cook", owner, pda: pda.toBase58(), listed: owner === escrow.toBase58() };
+      const escrow = await getEscrowAuthority();
+      return { label: label + ".cook", owner, pda: pda.toBase58(), listed: owner === escrow };
     }
 
     async function previewRecipient() {
@@ -438,6 +443,10 @@
           $("nameLine").className = "status";
         } else {
           dest = new solanaWeb3.PublicKey(to);
+        }
+        const escrow = await getEscrowAuthority();
+        if (dest.toBase58() === escrow) {
+          throw new Error("that address is the CookOven market escrow; sending would strand COOK");
         }
       } catch (e) {
         setStatus(e.message || "Bad recipient.", true); return;

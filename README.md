@@ -20,7 +20,7 @@ Crumbs sends native COOK with an on-chain memo, shows Nightly wallet state, and 
 - Fallback to `window.solana` if Nightly is missing (bounty still requires Nightly in the demo).
 - Show address and COOK balance.
 - Transfer COOK + Memo program instruction.
-- Resolve **`.cook` names** on-chain via Cook Domains (`H43Qtq4…`, PDA `["domain", label]`). If the owner is the CookOven market escrow (`["escrow_authority"]` on `Ey35mr69…` = `7rQTSWbk…`), the send is refused so COOK is not stranded. Live check 2026-09-09: `bot.cook` is listed (escrow owner) and must not be paid.
+- Resolve **`.cook` names** on-chain via Cook Domains (`H43Qtq4…`, PDA `["domain", label]`). If the owner is the CookOven market escrow (`["escrow_authority"]` on `Ey35mr69…` = `7rQTSWbk…`), the send is refused so COOK is not stranded — including a paste of that escrow pubkey as a raw address. Live check 2026-09-09: `bot.cook` is listed (escrow owner) and must not be paid.
 - Confirm the signature and link the explorer.
 - Dashboard: slot, epoch, RPC ping, 1-minute TPS, tx count, circulating COOK, COOK/USD, market count, sparkline from `getRecentPerformanceSamples`.
 - Live Cookiebox aggregator quote: 1 COOK → OMNOM via `GET https://agg.cookiebox.app/quote` (read-only, CORS `*`). Swap execution stays on Cookiebox — this page does not POST `/swap-tx`.
