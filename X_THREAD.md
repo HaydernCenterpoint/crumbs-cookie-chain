@@ -11,7 +11,8 @@ Wallet: https://nightly.app/
 3/ How to use it
 - Install Nightly
 - Bridge COOK: https://hyperlane.cookiescan.io
-- Connect → paste a recipient → add a memo → sign
+- Connect → paste a recipient (base58 or `name.cook`) → add a memo → sign
+- `.cook` names resolve on-chain through CookOven / Cook Domains (`H43Qtq4…`), not SPL Name Service
 - Explorer: https://cookiescan.io
 
 4/ Oven stats (slot/epoch/ping/TPS) and recent signatures are read live from Cookie RPC. COOK/USD and the top pools come from Cookiescan `api.cookiescan.io/api/markets`. OMNOM metadata is a DAS `getAsset` call. The 1 COOK → OMNOM quote is Cookiebox `GET /quote` (read-only).

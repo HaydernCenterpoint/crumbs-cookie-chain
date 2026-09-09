@@ -94,7 +94,8 @@
       <form class="panel" id="sendForm">
         <h2>Send a crumb</h2>
         <label for="to">Recipient</label>
-        <input id="to" name="to" placeholder="Cookie Chain address" autocomplete="off" required />
+        <input id="to" name="to" placeholder="address or name.cook" autocomplete="off" required />
+        <p class="status" id="nameLine"></p>
         <label for="amount">Amount (COOK)</label>
         <input id="amount" name="amount" type="number" min="0" step="0.000001" value="0.001" required />
         <label for="memo">Memo (on-chain)</label>
@@ -127,6 +128,7 @@
           <a href="https://cookiebox.app/" target="_blank" rel="noopener">Cookiebox</a>
           <a href="https://api.cookiescan.io/" target="_blank" rel="noopener">DAS API</a>
           <a href="https://nightly.app/" target="_blank" rel="noopener">Nightly</a>
+          <a href="https://book.cookoven.xyz" target="_blank" rel="noopener">CookOven .cook</a>
         </p>
       </div>
     </section>
@@ -173,6 +175,8 @@
     const OMNOM_MINT = "9V6z4wiifv2BrCxd7rwBWBAaWS2dxSepWZmWjRpfQ66p";
     const QUOTE_URL = "https://agg.cookiebox.app/quote";
     const SCAN_API = "https://api.cookiescan.io";
+    const COOK_DOMAINS = "H43Qtq4AMQ86y7yc3YtCKZJ2QMhhnCcHyZKeFeoQn7PA";
+    const DOMAIN_DISC = [35, 146, 98, 112, 13, 230, 231, 153];
     const solanaWeb3 = window.solanaWeb3;
     const connection = new solanaWeb3.Connection(RPC, "confirmed");
     let provider = null;
@@ -356,6 +360,55 @@
       setStatus("Connected.");
     }
 
+    function looksLikeCookName(input) {
+      return input.trim().toLowerCase().endsWith(".cook");
+    }
+
+    function normalizeCookLabel(input) {
+      const s = input.trim().toLowerCase();
+      return s.endsWith(".cook") ? s.slice(0, -5) : s;
+    }
+
+    async function resolveCookName(input) {
+      const label = normalizeCookLabel(input);
+      if (!label || label.length > 32 || !/^[a-z0-9-]+$/.test(label) || label.startsWith("-") || label.endsWith("-")) {
+        throw new Error("invalid .cook name");
+      }
+      const programId = new solanaWeb3.PublicKey(COOK_DOMAINS);
+      const [pda] = await solanaWeb3.PublicKey.findProgramAddress(
+        [new TextEncoder().encode("domain"), new TextEncoder().encode(label)],
+        programId
+      );
+      const info = await connection.getAccountInfo(pda);
+      if (!info || !info.data) throw new Error(label + ".cook is not registered");
+      const data = info.data;
+      for (let i = 0; i < 8; i++) {
+        if (data[i] !== DOMAIN_DISC[i]) throw new Error("account is not a Cook Domains record");
+      }
+      const nameLen = new DataView(data.buffer, data.byteOffset, data.byteLength).getUint32(8, true);
+      const end = 12 + nameLen;
+      if (end + 32 > data.length) throw new Error("domain account too short");
+      const owner = new solanaWeb3.PublicKey(data.slice(end, end + 32)).toBase58();
+      return { label: label + ".cook", owner, pda: pda.toBase58() };
+    }
+
+    async function previewRecipient() {
+      const to = $("to").value.trim();
+      const line = $("nameLine");
+      if (!looksLikeCookName(to)) {
+        line.textContent = "";
+        return;
+      }
+      try {
+        const r = await resolveCookName(to);
+        line.textContent = r.label + " → " + r.owner;
+        line.className = "status";
+      } catch (e) {
+        line.textContent = e.message || String(e);
+        line.className = "status err";
+      }
+    }
+
     async function sendCrumb(ev) {
       ev.preventDefault();
       if (!provider || !publicKey) return;
@@ -363,8 +416,18 @@
       const amount = Number($("amount").value);
       const memo = $("memo").value || "crumb";
       let dest;
-      try { dest = new solanaWeb3.PublicKey(to); } catch (e) {
-        setStatus("Bad recipient address.", true); return;
+      try {
+        if (looksLikeCookName(to)) {
+          setStatus("Resolving " + to + " on CookOven…");
+          const r = await resolveCookName(to);
+          dest = new solanaWeb3.PublicKey(r.owner);
+          $("nameLine").textContent = r.label + " → " + r.owner;
+          $("nameLine").className = "status";
+        } else {
+          dest = new solanaWeb3.PublicKey(to);
+        }
+      } catch (e) {
+        setStatus(e.message || "Bad recipient.", true); return;
       }
       const lamports = Math.round(amount * solanaWeb3.LAMPORTS_PER_SOL);
       if (!(lamports > 0)) { setStatus("Amount must be > 0.", true); return; }
@@ -411,6 +474,7 @@
     $("connect").addEventListener("click", () => connect().catch((e) => setStatus(e.message, true)));
     $("switchNet").addEventListener("click", () => switchNetwork().catch((e) => setStatus(e.message, true)));
     $("sendForm").addEventListener("submit", sendCrumb);
+    $("to").addEventListener("blur", () => previewRecipient().catch(() => {}));
     $("refreshBtn").addEventListener("click", () => {
       refreshStats(); refreshBalance(); refreshActivity(); refreshQuote(); refreshMarkets(); refreshAsset();
     });
